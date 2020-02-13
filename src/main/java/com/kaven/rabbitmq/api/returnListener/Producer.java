@@ -51,7 +51,7 @@ public class Producer {
         String msg = "RabbitMQ: return message";
         String msgError = "RabbitMQ: error return message";
         // mandatory 为 true
-        channel.basicPublish(exchange , routingKey , true,null , msg.getBytes());
-        channel.basicPublish(exchange , routingKeyError , true,null , msgError.getBytes());
+        channel.basicPublish(exchange , routingKey , false , null , msg.getBytes());
+        channel.basicPublish(exchange , routingKeyError , false,null , msgError.getBytes());
     }
 }
