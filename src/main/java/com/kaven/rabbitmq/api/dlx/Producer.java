@@ -1,14 +1,14 @@
-package com.kaven.rabbitmq.api.qos;
+package com.kaven.rabbitmq.api.dlx;
 
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.QueueingConsumer;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
-public class Consumer {
+public class Producer {
     // 自己服务器的IP
     private static String ip = "47.112.7.219";
     // RabbitMQ启动的默认端口，也是应用程序进行连接RabbitMQ的端口
@@ -18,10 +18,10 @@ public class Consumer {
 
     // default exchange
     private static String exchange = "";
-    // 队列名
-    private static String queueName = "test";
+    // default exchange 的路由规则： routingKey（test） 将匹配同名的 queue(test)
+    private static String routingKey = "test";
 
-    public static void main(String[] args) throws IOException, TimeoutException, InterruptedException {
+    public static void main(String[] args) throws IOException, TimeoutException {
         // 1 创建ConnectionFactory
         ConnectionFactory connectionFactory = new ConnectionFactory();
         connectionFactory.setHost(ip);
@@ -34,14 +34,19 @@ public class Consumer {
         // 3 创建Channel
         Channel channel = connection.createChannel();
 
-        // 4 创建Queue
-        channel.queueDeclare(queueName , true , false , false , null);
+        // 4 发送消息
+        for (int i = 0; i < 5; i++) {
+            AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
+                    .deliveryMode(2)
+                    .contentEncoding("UTF-8")
+                    .expiration("10000")
+                    .build();
+            String msg = "RabbitMQ: dlx message" + i;
+            channel.basicPublish(exchange , routingKey , properties , msg.getBytes());
+        }
 
-        // 5 限流方式
-        // 0-说明对消息大小不限制 ， 1-一次性最多消费1条消息 ，false-设置consumer而不是channel
-        channel.basicQos(0 , 1 ,false);
-
-        // 6 消费消息， autoAck一定要设置为false
-        channel.basicConsume(queueName , false , new MyConsumer(channel));
+        // 5 关闭连接
+        channel.close();
+        connection.close();
     }
 }

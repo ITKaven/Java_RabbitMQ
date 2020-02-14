@@ -1,11 +1,12 @@
-package com.kaven.rabbitmq.api.qos;
+package com.kaven.rabbitmq.api.ttl;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.QueueingConsumer;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 public class Consumer {
@@ -35,13 +36,11 @@ public class Consumer {
         Channel channel = connection.createChannel();
 
         // 4 创建Queue
-        channel.queueDeclare(queueName , true , false , false , null);
+        Map<String , Object> arguments = new HashMap<>();
+        arguments.put("x-message-ttl" , 10000);
+        channel.queueDeclare(queueName , true , false , false , arguments);
 
-        // 5 限流方式
-        // 0-说明对消息大小不限制 ， 1-一次性最多消费1条消息 ，false-设置consumer而不是channel
-        channel.basicQos(0 , 1 ,false);
-
-        // 6 消费消息， autoAck一定要设置为false
-        channel.basicConsume(queueName , false , new MyConsumer(channel));
+        // 5 先不消费消息
+//        channel.basicConsume(queueName , true, new MyConsumer(channel));
     }
 }

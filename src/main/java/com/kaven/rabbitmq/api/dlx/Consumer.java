@@ -1,11 +1,12 @@
-package com.kaven.rabbitmq.api.qos;
+package com.kaven.rabbitmq.api.dlx;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.QueueingConsumer;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 public class Consumer {
@@ -21,6 +22,11 @@ public class Consumer {
     // 队列名
     private static String queueName = "test";
 
+    // 死信队列的设置
+    private static String dlxExchange = "dlx.exchange";
+    private static String dlxQueueName = "dlx.queue";
+    private static String dlxRoutingKey = "#";
+
     public static void main(String[] args) throws IOException, TimeoutException, InterruptedException {
         // 1 创建ConnectionFactory
         ConnectionFactory connectionFactory = new ConnectionFactory();
@@ -34,14 +40,17 @@ public class Consumer {
         // 3 创建Channel
         Channel channel = connection.createChannel();
 
-        // 4 创建Queue
-        channel.queueDeclare(queueName , true , false , false , null);
+        // 4 设置死信队列
+        Map<String , Object> arguments = new HashMap<String , Object>();
+        arguments.put("x-dead-letter-exchange" , dlxExchange);
+        channel.exchangeDeclare(dlxExchange , "topic" , true , false , null);
+        channel.queueDeclare(dlxQueueName , true , false , false , null);
+        channel.queueBind(dlxQueueName , dlxExchange , dlxRoutingKey);
 
-        // 5 限流方式
-        // 0-说明对消息大小不限制 ， 1-一次性最多消费1条消息 ，false-设置consumer而不是channel
-        channel.basicQos(0 , 1 ,false);
+        // 5 创建Queue
+        channel.queueDeclare(queueName , true , false , false , arguments);
 
-        // 6 消费消息， autoAck一定要设置为false
-        channel.basicConsume(queueName , false , new MyConsumer(channel));
+        // 6 消费消息
+//        channel.basicConsume(queueName , true , new MyConsumer(channel));
     }
 }

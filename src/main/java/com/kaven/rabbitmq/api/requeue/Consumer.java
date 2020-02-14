@@ -36,8 +36,7 @@ public class Consumer {
         // 4 创建Queue
         channel.queueDeclare(queueName , true , false , false , null);
 
-
-        // 5 消费信息，autoAck要设置为false
+        // 5 消费消息，autoAck要设置为false
         channel.basicConsume(queueName , false , new MyConsumer(channel));
     }
 }
